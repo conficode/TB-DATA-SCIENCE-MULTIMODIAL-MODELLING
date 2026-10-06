@@ -1,0 +1,2 @@
+Copy your trained CNN file here:   models/cnn/tb_xray_best.keras
+(do not rename it, or set the CNN_MODEL_PATH environment variable)

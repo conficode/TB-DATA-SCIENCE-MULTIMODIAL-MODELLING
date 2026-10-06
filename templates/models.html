@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% block content %}
+<header class="page-head"><div><p class="eyebrow">Transparency</p><h1>Models &amp; method</h1></div></header>
+<section class="grid-2">
+<div class="card"><h3>Chest X-ray CNN</h3><dl class="audit">
+<dt>Input</dt><dd>224×224×3 RGB, pixels 0–255 (Rescaling 1/255 inside the model)</dd><dt>Architecture</dt><dd>Augmentation (inactive at inference) → 3× Conv/MaxPool (32/64/128) → Dense 128 → Dropout → Sigmoid</dd>
+<dt>Output</dt><dd>P(TB); classes NORMAL=0, TB=1</dd><dt>Threshold</dt><dd>{{ cfg.CNN_THRESHOLD }} (validation set: sensitivity 0.990, specificity 0.978)</dd></dl>
+<h4>Test set (n = 240, threshold 0.5)</h4>
+<table class="table mini"><tr><th>Accuracy</th><th>Precision</th><th>Sensitivity</th><th>Specificity</th><th>F1</th><th>ROC-AUC</th></tr>
+<tr><td>0.954</td><td>0.952</td><td>0.943</td><td>0.963</td><td>0.947</td><td>0.986</td></tr></table>
+<p class="hint">Confusion matrix: TN 130 · FP 5 · FN 6 · TP 99</p></div>
+<div class="card"><h3>Clinical model</h3><dl class="audit">
+<dt>Input</dt><dd>14 raw findings → 12 model features (incl. engineered core-symptom count)</dd><dt>Pipeline</dt><dd>Feature engineering → median/mode imputation → standardisation → one-hot → logistic regression</dd>
+<dt>Output</dt><dd>Calibrated P(TB) (~30% base rate, synthetic data)</dd><dt>Threshold</dt><dd>{{ status.clinical.threshold }} (≥ 90% sensitivity rule)</dd></dl>
+<h4>Test set (n = 2,031, threshold 0.147)</h4>
+<table class="table mini"><tr><th>Accuracy</th><th>Precision</th><th>Sensitivity</th><th>Specificity</th><th>F1</th><th>ROC-AUC</th></tr>
+<tr><td>0.681</td><td>0.482</td><td>0.901</td><td>0.587</td><td>0.628</td><td>0.855</td></tr></table>
+<p class="hint">Confusion matrix: TN 836 · FP 588 · FN 60 · TP 547</p></div>
+</section>
+<section class="card"><h3>Fusion</h3>
+<p>Each model is judged against its own threshold. Then <code>fused = 0.5·p<sub>CNN</sub> + 0.5·p<sub>clinical</sub></code>, compared with the matching fused threshold <code>0.5·{{ cfg.CNN_THRESHOLD }} + 0.5·{{ status.clinical.threshold }}</code>.
+Disagreement between models is <b>never hidden by the average</b>: it is flagged as <i>Indeterminate</i> with high uncertainty.</p>
+<div class="flash warn"><b>Why fusion has no test metrics yet:</b> the X-ray images and the clinical records come from different, unpaired datasets, so no patient has both. Fusion weights and fused performance can only be estimated from real paired cases. The app stores confirmed outcomes for exactly this purpose (see <code>scripts/evaluate_fusion.py</code>).</div>
+</section>
+{% endblock %}

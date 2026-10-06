@@ -1,0 +1,10 @@
+# Python 3.11 or 3.12 recommended
+flask>=3.0,<4
+tensorflow>=2.18,<2.21        # must load a Keras-3 .keras file; match your Colab version if loading fails
+scikit-learn==1.8.0           # EXACT: tb_clinical_model.joblib was saved with 1.8.0
+numpy>=2.0
+pandas>=2.2
+joblib>=1.4
+pillow>=10
+matplotlib>=3.8
+gunicorn>=22                  # production server (Linux deployment)

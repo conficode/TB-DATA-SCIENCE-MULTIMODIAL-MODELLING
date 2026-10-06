@@ -1,0 +1,79 @@
+{% extends "base.html" %}{% from "_macros.html" import gauge %}{% block content %}
+{% set p = d.prediction %}{% set f = p.details.fusion %}{% set t = p.details.thresholds %}
+<header class="page-head"><div><p class="eyebrow">Case {{ d.case.case_id }} · {{ d.case.patient_ref }} · {{ d.case.created_at }}</p>
+<h1>Screening assessment</h1></div><a class="btn" href="{{ url_for('new_screening') }}">＋ New screening</a></header>
+
+<section class="verdict {{ f.agreement }} unc-{{ f.uncertainty }}">
+  <div class="v-icon">{{ {'concordant_positive':'!','concordant_negative':'✓','discordant':'⚑'}[f.agreement] }}</div>
+  <div class="v-text"><p class="eyebrow">Final screening assessment</p><h2>{{ f.assessment }}</h2><p>{{ f.recommendation }}</p></div>
+  <div class="v-side"><span class="pill unc {{ f.uncertainty }}">{{ f.uncertainty|capitalize }} uncertainty</span>
+    <span class="pill {{ f.agreement }}">{{ {'concordant_positive':'Models agree · TB','concordant_negative':'Models agree · no TB','discordant':'Models disagree'}[f.agreement] }}</span></div>
+</section>
+
+<section class="gauges card">
+  {{ gauge(f.cnn_probability, t.cnn, 'Chest X-ray CNN', ('Above' if f.cnn_positive else 'Below') ~ ' threshold ' ~ t.cnn, '#FFD000') }}
+  <div class="plus">+</div>
+  {{ gauge(f.clinical_probability, t.clinical, 'Clinical model', ('Above' if f.clinical_positive else 'Below') ~ ' threshold ' ~ t.clinical, '#F5F5F0') }}
+  <div class="plus">=</div>
+  {{ gauge(f.fused_probability, t.fused, 'Fused probability', ('Above' if f.fused_positive else 'Below') ~ ' fused threshold ' ~ t.fused, '#FF9F0A') }}
+</section>
+
+<section class="grid-2">
+  <div class="card">
+    <h3>Why this uncertainty level?</h3>
+    <ul class="reasons">{% for r in f.reasons %}<li>{{ r }}</li>{% endfor %}</ul>
+    <div class="formula"><code>fused = {{ p.details.weights.cnn }} × {{ f.cnn_probability }} + {{ p.details.weights.clinical }} × {{ f.clinical_probability }} = <b>{{ f.fused_probability }}</b></code>
+      <p class="hint">Equal weights are a documented assumption: no patients with both data types exist yet to estimate them.</p></div>
+  </div>
+  <div class="card">
+    <h3>Clinical inputs</h3>
+    <div class="chips">
+      {% for k,(lo,hi,label) in numeric.items() %}<span class="chip"><small>{{ label }}</small>{{ p.clinical_inputs[k]|round(1) }}</span>{% endfor %}
+      <span class="chip"><small>HIV</small>{{ p.clinical_inputs.hiv_status }}</span>
+      {% for k,label in binary.items() %}<span class="chip {{ 'yes' if p.clinical_inputs[k]==1 }}"><small>{{ label }}</small>{{ 'Yes' if p.clinical_inputs[k]==1 else 'No' }}</span>{% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="grid-2">
+  <div class="card">
+    <h3>X-ray explanation <small class="muted">Grad-CAM</small></h3>
+    {% if p.details.gradcam %}
+    <div class="xray-pair"><figure><img src="{{ url_for('static', filename='gradcam/' ~ d.case.case_id ~ '_input.png') }}"><figcaption>Model input (224×224)</figcaption></figure>
+    <figure><img src="{{ url_for('static', filename='gradcam/' ~ d.case.case_id ~ '_cam.png') }}"><figcaption>Grad-CAM overlay</figcaption></figure></div>
+    {% else %}<p class="muted">Grad-CAM could not be generated for this image.</p>{% endif %}
+    <p class="hint">Highlights regions that most influenced the CNN's output. It is a model explanation, not evidence of a lesion.</p>
+  </div>
+  <div class="card">
+    <h3>Clinical explanation <small class="muted">SHAP</small></h3>
+    <div class="shap">
+      {% for r in p.details.shap.rows %}
+      <div class="shap-row"><span class="sf">{{ r.feature }} <small>= {{ r.value }}</small></span>
+        <div class="sbar"><div class="{{ 'pos' if r.contribution>0 else 'neg' }}" style="width:{{ r.width/2 }}%"></div></div>
+        <span class="sv {{ 'pos' if r.contribution>0 else 'neg' }}">{{ '%+.2f'|format(r.contribution) }}</span></div>
+      {% endfor %}
+    </div>
+    <p class="hint">Log-odds contributions relative to an average training patient (baseline {{ '%.0f'|format(p.details.shap.base_probability*100) }}%). Yellow pushes towards TB, grey away. These are associations, not causes.</p>
+  </div>
+</section>
+
+<section class="grid-2">
+  <div class="card">
+    <h3>Clinician-confirmed outcome</h3>
+    {% if d.outcome %}<div class="confirmed-box"><span class="pill confirmed">{{ d.outcome.outcome }}</span><p>{{ d.outcome.method or '' }} · {{ d.outcome.confirmed_by or '' }} · {{ d.outcome.confirmed_at }}</p></div>{% endif %}
+    <form method="post" action="{{ url_for('save_outcome', case_id=d.case.case_id) }}" class="fields two">
+      <label>Outcome<select name="outcome" required><option value="" disabled selected>Select…</option><option>TB confirmed</option><option>TB excluded</option><option>Inconclusive</option></select></label>
+      <label>Method<select name="method"><option>GeneXpert MTB/RIF</option><option>Sputum smear</option><option>Culture</option><option>Clinical diagnosis</option></select></label>
+      <label>Confirmed by<input name="confirmed_by" placeholder="Clinician"></label>
+      <label>Notes<input name="notes"></label>
+      <button class="btn primary" type="submit">Save confirmed outcome</button>
+    </form>
+    <p class="hint">Stored separately from the AI prediction. Used later for controlled evaluation, never for automatic retraining.</p>
+  </div>
+  <div class="card">
+    <h3>Audit trail</h3>
+    <dl class="audit"><dt>CNN</dt><dd>{{ p.cnn_version }}</dd><dt>Clinical</dt><dd>{{ p.clinical_version }}</dd><dt>Fusion</dt><dd>{{ p.fusion_version }}</dd>
+    <dt>X-ray file</dt><dd>{{ p.xray_path }}</dd><dt>Saved</dt><dd>{{ p.created_at }}</dd><dt>Clinician</dt><dd>{{ d.case.clinician or '-' }}</dd></dl>
+  </div>
+</section>
+{% endblock %}

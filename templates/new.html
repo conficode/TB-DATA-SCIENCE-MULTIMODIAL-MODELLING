@@ -1,0 +1,49 @@
+{% extends "base.html" %}{% block content %}
+<header class="page-head"><div><p class="eyebrow">New screening</p><h1>Create a case</h1>
+<p class="muted">Enter the clinical findings and upload a chest X-ray. All fields are required by the models.</p></div></header>
+<form method="post" action="{{ url_for('run_screening') }}" enctype="multipart/form-data" class="grid-2" id="screen-form">
+  <div class="col">
+    <section class="card">
+      <h3><span class="num">1</span>Case details</h3>
+      <div class="fields three">
+        <label>Patient reference<input name="patient_ref" placeholder="e.g. PHC-0231 (no names)" value="{{ form.get('patient_ref','') }}"></label>
+        <label>Sex<select name="sex"><option>Female</option><option {{ 'selected' if form.get('sex')=='Male' }}>Male</option></select></label>
+        <label>Clinician<input name="clinician" placeholder="Dr. …" value="{{ form.get('clinician','') }}"></label>
+      </div>
+    </section>
+    <section class="card">
+      <h3><span class="num">2</span>Measurements</h3>
+      <div class="fields three">
+        {% for f,(lo,hi,label) in numeric.items() %}
+        <label>{{ label }}<input type="number" step="any" name="{{ f }}" min="{{ lo }}" max="{{ hi }}" required value="{{ form.get(f,'') }}" placeholder="{{ lo }}–{{ hi }}"></label>
+        {% endfor %}
+        <label>HIV status<select name="hiv_status" required><option value="" disabled {{ '' if form.get('hiv_status') else 'selected' }}>Select…</option>
+          <option {{ 'selected' if form.get('hiv_status')=='Negative' }}>Negative</option><option {{ 'selected' if form.get('hiv_status')=='Positive' }}>Positive</option></select></label>
+      </div>
+    </section>
+    <section class="card">
+      <h3><span class="num">3</span>Symptoms &amp; exposure</h3>
+      <div class="toggles">
+        {% for f,label in binary.items() %}
+        <div class="toggle-row"><span>{{ label }}</span>
+          <div class="seg"><input type="radio" id="{{ f }}1" name="{{ f }}" value="1" {{ 'checked' if form.get(f)=='1' }} required><label for="{{ f }}1">Yes</label>
+          <input type="radio" id="{{ f }}0" name="{{ f }}" value="0" {{ 'checked' if form.get(f)=='0' }}><label for="{{ f }}0">No</label></div></div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+  <div class="col">
+    <section class="card sticky">
+      <h3><span class="num">4</span>Chest X-ray</h3>
+      <label class="dropzone" id="dropzone"><input type="file" name="xray" id="xray" accept=".png,.jpg,.jpeg" required>
+        <div class="dz-empty"><div class="dz-icon">⬆</div><b>Drop the X-ray here</b><p class="muted">or click to browse · PNG / JPEG · max 15 MB</p></div>
+        <img id="preview" alt="">
+      </label>
+      <p class="hint">The image is resized to 224×224 RGB exactly as in training.</p>
+      <label>Notes<textarea name="notes" rows="2" placeholder="Optional clinical notes">{{ form.get('notes','') }}</textarea></label>
+      <button class="btn primary big full" type="submit" id="run-btn"><span>Run multimodal screening</span></button>
+      <p class="hint center">Runs the CNN, the clinical model and fusion, then saves the case.</p>
+    </section>
+  </div>
+</form>
+{% endblock %}

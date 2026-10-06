@@ -1,0 +1,11 @@
+{% macro gauge(p, thr, label, sub, color) -%}
+<div class="gauge-card">
+  <div class="gauge" style="--p:{{ (p*100)|round(1) }};--c:{{ color }}">
+    <svg viewBox="0 0 120 120"><circle class="track" cx="60" cy="60" r="50"/><circle class="bar" cx="60" cy="60" r="50" pathLength="100"/>
+      <line class="thr" x1="60" y1="4" x2="60" y2="18" transform="rotate({{ thr*360 }} 60 60)"/></svg>
+    <div class="gauge-val"><b>{{ (p*100)|round(1) }}<small>%</small></b><span>TB probability</span></div>
+  </div>
+  <h4>{{ label }}</h4>
+  <p class="muted">{{ sub }}</p>
+</div>
+{%- endmacro %}

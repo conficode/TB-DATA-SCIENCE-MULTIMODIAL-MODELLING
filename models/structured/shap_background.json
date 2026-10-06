@@ -1,0 +1,31 @@
+{
+ "feature_names": [
+  "num__core_symptom_count",
+  "num__bmi",
+  "num__cough_duration_weeks",
+  "num__age",
+  "num__temperature_c",
+  "num__spo2",
+  "bin__household_tb_contact",
+  "bin__fever",
+  "bin__productive_cough",
+  "bin__weight_loss",
+  "bin__fatigue",
+  "cat__hiv_status_Positive"
+ ],
+ "background_mean": [
+  -7.174548002995717e-17,
+  -1.7323908592599414e-16,
+  1.0783695626453927e-16,
+  6.124614148898783e-17,
+  -8.289227778095296e-15,
+  1.2712949083357044e-15,
+  0.10146533678118458,
+  0.49279645363871444,
+  0.49341214136190126,
+  0.4142347001600788,
+  0.5583056273857899,
+  0.08028567910355867
+ ],
+ "source": "mean of transformed training-split features (seed 42, 80/20 stratified), used as SHAP baseline"
+}

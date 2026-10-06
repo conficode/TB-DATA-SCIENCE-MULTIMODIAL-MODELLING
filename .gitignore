@@ -1,0 +1,7 @@
+__pycache__/
+.venv*/
+database/*.db
+uploads/*
+!uploads/.gitkeep
+static/gradcam/*
+!static/gradcam/.gitkeep

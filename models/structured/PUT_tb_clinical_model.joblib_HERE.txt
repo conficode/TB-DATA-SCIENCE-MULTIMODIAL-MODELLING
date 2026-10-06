@@ -1,0 +1,2 @@
+Copy your clinical model here:   models/structured/tb_clinical_model.joblib
+shap_background.json (already here) is required for the SHAP explanation.
