@@ -10,15 +10,16 @@
 <p class="hint">Confusion matrix: TN 130 · FP 5 · FN 6 · TP 99</p></div>
 <div class="card"><h3>Clinical model</h3><dl class="audit">
 <dt>Input</dt><dd>14 raw findings → 12 model features (incl. engineered core-symptom count)</dd><dt>Pipeline</dt><dd>Feature engineering → median/mode imputation → standardisation → one-hot → logistic regression</dd>
-<dt>Output</dt><dd>Calibrated P(TB) (~30% base rate, synthetic data)</dd><dt>Threshold</dt><dd>{{ status.clinical.threshold }} (≥ 90% sensitivity rule)</dd></dl>
-<h4>Test set (n = 2,031, threshold 0.147)</h4>
-<table class="table mini"><tr><th>Accuracy</th><th>Precision</th><th>Sensitivity</th><th>Specificity</th><th>F1</th><th>ROC-AUC</th></tr>
-<tr><td>0.681</td><td>0.482</td><td>0.901</td><td>0.587</td><td>0.628</td><td>0.855</td></tr></table>
-<p class="hint">Confusion matrix: TN 836 · FP 588 · FN 60 · TP 547</p></div>
+<dt>Output</dt><dd>Calibrated P(TB) (~30% base rate, synthetic data)</dd><dt>Threshold</dt><dd>{{ status.clinical.threshold }} (best F1 and Youden's J in the notebook's threshold table)</dd>
+<dt>Input range</dt><dd>Numeric inputs outside the training range (mean ± 3 SD, e.g. SpO₂ 91–100%, BMI 11–33) are limited to that range before prediction, and the result page says so</dd></dl>
+<h4>Training out-of-fold, threshold 0.35</h4>
+<table class="table mini"><tr><th>Precision</th><th>Sensitivity</th><th>Specificity</th><th>F1</th><th>ROC-AUC (test)</th></tr>
+<tr><td>0.645</td><td>0.732</td><td>0.828</td><td>0.685</td><td>0.855</td></tr></table>
+<p class="hint">Previous screening threshold 0.147 (test set): sensitivity 0.901 but specificity only 0.587.</p></div>
 </section>
 <section class="card"><h3>Fusion</h3>
 <p>Each model is judged against its own threshold. Then <code>fused = 0.5·p<sub>CNN</sub> + 0.5·p<sub>clinical</sub></code>, compared with the matching fused threshold <code>0.5·{{ cfg.CNN_THRESHOLD }} + 0.5·{{ status.clinical.threshold }}</code>.
-Disagreement between models is <b>never hidden by the average</b>: it is flagged as <i>Indeterminate</i> with high uncertainty.</p>
+Disagreement between models is <b>never hidden by the average</b>: it always has high uncertainty, and is labelled <i>TB possible</i> (fused probability above the fused threshold) or <i>Indeterminate</i>.</p>
 <div class="flash warn"><b>Why fusion has no test metrics yet:</b> the X-ray images and the clinical records come from different, unpaired datasets, so no patient has both. Fusion weights and fused performance can only be estimated from real paired cases. The app stores confirmed outcomes for exactly this purpose (see <code>scripts/evaluate_fusion.py</code>).</div>
 </section>
 {% endblock %}

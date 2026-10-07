@@ -90,6 +90,7 @@ def run_screening():
     try:
         p_clin = CLINICAL.predict(inputs)
         shap_exp = CLINICAL.explain(inputs)
+        input_notes = CLINICAL.input_notes(inputs)
         p_cnn, x = CNN.predict(path)
         cam_path = C.GRADCAM_DIR / f"{case_id}_cam.png"
         try:
@@ -105,6 +106,7 @@ def run_screening():
         return render_template("new.html", numeric=NUMERIC_FIELDS, binary=BINARY_FIELDS, form=form), 500
 
     details = {"fusion": result.to_dict(), "weights": C.FUSION_WEIGHTS, "shap": shap_exp, "gradcam": cam_ok,
+               "input_notes": input_notes,
                "thresholds": {"cnn": C.CNN_THRESHOLD, "clinical": CLINICAL.threshold, "fused": result.fused_threshold}}
     case = {"case_id": case_id, "patient_ref": form.get("patient_ref", "").strip() or case_id,
             "sex": form.get("sex"), "clinician": form.get("clinician", "").strip(), "notes": form.get("notes", "").strip()}

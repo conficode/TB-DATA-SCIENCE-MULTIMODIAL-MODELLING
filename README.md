@@ -22,8 +22,8 @@ LungLens is an **AI-assisted screening / decision-support prototype** that combi
 | **Input** | 224 × 224 × 3 RGB image, raw pixels 0–255 | 14 raw inputs: age, bmi, cough_duration_weeks, temperature_c, spo2, hiv_status, fever, night_sweats, weight_loss, hemoptysis, loss_of_appetite, productive_cough, fatigue, household_tb_contact |
 | **Preprocessing** | decode as 3-channel RGB → **bilinear** resize to 224×224 (exactly `image_dataset_from_directory`). `Rescaling(1/255)` is **inside** the model; augmentation layers are inactive at inference | All inside the saved pipeline: `FeatureEngineer` (core-symptom count etc.) → median/mode imputation → `StandardScaler` → `OneHotEncoder` → `LogisticRegression` |
 | **Output** | sigmoid = **P(TB)** (classes alphabetical: NORMAL = 0, TB = 1) | **P(TB)**, well calibrated (~30 % base rate) |
-| **Threshold used** | **0.55**: your validation table, highest threshold keeping sensitivity 0.990 (spec. 0.978) | **0.147**: ≥ 90 % sensitivity rule from the clinical notebook |
-| **Test performance** | Acc 0.954 · Sens 0.943 · Spec 0.963 · AUC 0.986 (n = 240, @0.5) | Acc 0.681 · Sens 0.901 · Spec 0.587 · AUC 0.855 (n = 2,031, @0.147) |
+| **Threshold used** | **0.55**: your validation table, highest threshold keeping sensitivity 0.990 (spec. 0.978) | **0.35**: best F1 and Youden's J in the notebook's threshold table (was 0.147) |
+| **Test performance** | Acc 0.954 · Sens 0.943 · Spec 0.963 · AUC 0.986 (n = 240, @0.5) | OOF @0.35: Sens 0.732 · Spec 0.828 · F1 0.685 · test AUC 0.855 |
 
 **Compatibility notes**
 1. **Resize interpolation.** Your notebook's `predict_xray()` used `load_img` (nearest-neighbour by default), but training used bilinear resizing. The app uses **bilinear**, verified pixel-identical (max difference 0.0) to the training loader.
@@ -64,15 +64,16 @@ tb_multimodal/
                                                                          └► Grad-CAM heat-map              │
                                                                                                            ▼
                         fusion.fuse():  each model vs its OWN threshold → agreement (concordant/discordant)
-                                        fused = 0.5·p_cnn + 0.5·p_clinical  vs  fused threshold 0.5·0.55 + 0.5·0.147
-                                        uncertainty = high (disagree or gap ≥ 0.5) / moderate (borderline) / low
+                                        fused = 0.5·p_cnn + 0.5·p_clinical  vs  fused threshold 0.5·0.55 + 0.5·0.35 
+                                        uncertainty = high (disagree) / moderate (borderline or gap ≥ 0.5) / low
                                                                                                            ▼
                         SQLite: cases + predictions (+ later: confirmed_outcomes) ──► results dashboard
 ```
 **Final assessment logic**
 * Both above threshold → **High suspicion of TB**: refer for GeneXpert/culture.
 * Both below → **Low suspicion of TB**.
-* Disagree → **Indeterminate: models disagree**, with *high uncertainty*. Clinician review is required and confirmatory testing is advised. Disagreement is **never hidden** by the averaged number.
+* Disagree → *high uncertainty*. If the fused probability is above the fused threshold, the result is **TB possible: models disagree** and the patient is referred for confirmatory testing. Otherwise it is **Indeterminate: models disagree**, which requires clinician review. Disagreement is **never hidden** by the averaged number.
+* Clinical inputs outside the training range (mean ± 3 SD) are limited to that range before prediction, and the result page lists them. A linear model would otherwise extrapolate, e.g. SpO₂ 65% would force P(TB) to about 0.
 
 Examples: CNN 0.91 + clinical 0.87 → concordant, low uncertainty. CNN 0.15 + clinical 0.82 → discordant, high uncertainty.
 

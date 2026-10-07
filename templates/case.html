@@ -32,6 +32,7 @@
       <span class="chip"><small>HIV</small>{{ p.clinical_inputs.hiv_status }}</span>
       {% for k,label in binary.items() %}<span class="chip {{ 'yes' if p.clinical_inputs[k]==1 }}"><small>{{ label }}</small>{{ 'Yes' if p.clinical_inputs[k]==1 else 'No' }}</span>{% endfor %}
     </div>
+    {% if p.details.input_notes %}<div class="flash warn" style="margin-top:12px">{% for n in p.details.input_notes %}<div>{{ n }}</div>{% endfor %}</div>{% endif %}
   </div>
 </section>
 

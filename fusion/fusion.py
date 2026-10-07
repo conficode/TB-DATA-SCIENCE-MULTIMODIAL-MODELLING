@@ -7,15 +7,17 @@ weights could be estimated. Equal weights are therefore a transparent ASSUMPTION
 `scripts/evaluate_fusion.py` estimates weights once confirmed paired cases exist in the database.
 
 RULE
-1. Each model is first judged against ITS OWN validated threshold (CNN 0.55, clinical 0.147).
+1. Each model is first judged against ITS OWN threshold (CNN 0.55, clinical 0.35).
 2. fused_probability = w_cnn * p_cnn + w_clin * p_clin      (weights 0.5 / 0.5)
    fused_threshold   = w_cnn * t_cnn + w_clin * t_clin      (so the fused cut-off is consistent
                                                              with the individual cut-offs)
 3. Agreement: both positive / both negative = concordant; otherwise discordant.
-4. Uncertainty: HIGH if discordant or |p_cnn - p_clin| >= 0.50; MODERATE if any probability is
-   borderline (within 0.10 of its threshold); otherwise LOW.
-5. Final assessment: discordant cases are NEVER resolved silently by the average. They are flagged
-   'Indeterminate - clinician review' and, for screening safety, confirmatory testing is advised.
+4. Uncertainty: HIGH if the models disagree. If they agree, MODERATE when a probability is borderline
+   (within 0.10 of its threshold) or the probabilities differ by >= 0.50 (same direction, different
+   strength); otherwise LOW.
+5. Final assessment: discordant cases are NEVER resolved silently. If the fused probability is above
+   the fused threshold (one model is confident enough to outweigh the other) the case is 'TB possible -
+   models disagree' and referred for confirmatory testing; otherwise 'Indeterminate' with clinician review.
 """
 from dataclasses import dataclass, asdict
 import config as C
@@ -40,7 +42,7 @@ class FusionResult:
         return asdict(self)
 
 
-def fuse(p_cnn, p_clin, t_cnn=C.CNN_THRESHOLD, t_clin=0.147, weights=C.FUSION_WEIGHTS):
+def fuse(p_cnn, p_clin, t_cnn=C.CNN_THRESHOLD, t_clin=C.CLINICAL_THRESHOLD, weights=C.FUSION_WEIGHTS):
     w_c, w_k = weights["cnn"], weights["clinical"]
     fused = w_c * p_cnn + w_k * p_clin
     t_fused = w_c * t_cnn + w_k * t_clin
@@ -59,13 +61,16 @@ def fuse(p_cnn, p_clin, t_cnn=C.CNN_THRESHOLD, t_clin=0.147, weights=C.FUSION_WE
     gap = abs(p_cnn - p_clin)
     borderline = [n for n, p, t in (("X-ray", p_cnn, t_cnn), ("Clinical", p_clin, t_clin)) if abs(p - t) < C.BORDERLINE_MARGIN]
     if gap >= C.CONFLICT_GAP:
-        reasons.append(f"Large probability gap between models ({gap:.2f}).")
+        if agreement == "discordant":
+            reasons.append(f"Large probability gap between models ({gap:.2f}).")
+        else:
+            reasons.append(f"Both models point the same way but with different strength (gap {gap:.2f}).")
     for n in borderline:
         reasons.append(f"{n} probability is close to its decision threshold (borderline).")
 
-    if agreement == "discordant" or gap >= C.CONFLICT_GAP:
+    if agreement == "discordant":
         uncertainty = "high"
-    elif borderline:
+    elif borderline or gap >= C.CONFLICT_GAP:
         uncertainty = "moderate"
     else:
         uncertainty = "low"
@@ -77,6 +82,11 @@ def fuse(p_cnn, p_clin, t_cnn=C.CNN_THRESHOLD, t_clin=0.147, weights=C.FUSION_WE
     elif agreement == "concordant_negative":
         assessment = "Low suspicion of TB"
         rec = "TB not suggested by either model. Continue routine care; re-assess if symptoms persist."
+    elif fused >= t_fused:
+        assessment = "TB possible - models disagree"
+        who = "X-ray model" if cnn_pos else "clinical model"
+        rec = (f"The {who} is confident enough to outweigh the other model. Refer for confirmatory testing "
+               "(e.g. GeneXpert MTB/RIF) and clinician review.")
     else:
         assessment = "Indeterminate - models disagree"
         rec = "Clinician review required. For screening safety, confirmatory testing is advised."

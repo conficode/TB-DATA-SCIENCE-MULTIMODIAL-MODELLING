@@ -38,6 +38,14 @@ class ClinicalModel:
             bg = json.loads(C.SHAP_BACKGROUND_PATH.read_text())
             self.bg_mean = np.array(bg["background_mean"])
             self.feature_names = bg["feature_names"]
+            prep = self.pipeline.named_steps["prep"]
+            scaler = prep.named_transformers_["num"].named_steps["scale"]
+            num_cols = next(cols for name, _, cols in prep.transformers_ if name == "num")
+            self.input_range = {}
+            for col, mu, sd in zip(num_cols, scaler.mean_, scaler.scale_):
+                if col in NUMERIC_FIELDS:
+                    lo, hi = NUMERIC_FIELDS[col][:2]
+                    self.input_range[col] = (max(lo, mu - C.CLINICAL_CLIP_SD * sd), min(hi, mu + C.CLINICAL_CLIP_SD * sd))
             log.info("Clinical model loaded: %s", self.meta.get("model"))
         except Exception as e:
             self.error = str(e)
@@ -49,7 +57,7 @@ class ClinicalModel:
 
     @property
     def threshold(self):
-        return float(self.meta.get("threshold", 0.147))
+        return float(C.CLINICAL_THRESHOLD)
 
     @property
     def version(self):
@@ -60,7 +68,7 @@ class ClinicalModel:
         """Return (clean_inputs, errors). All 14 inputs are required."""
         clean, errors = {}, []
         for f, (lo, hi, label) in NUMERIC_FIELDS.items():
-            v = (form.get(f) or "").strip()
+            v = str(form.get(f, "") or "").strip()
             if v == "":
                 errors.append(f"{label} is required.")
                 continue
@@ -73,22 +81,39 @@ class ClinicalModel:
                 errors.append(f"{label} must be between {lo} and {hi}.")
             clean[f] = x
         for f, label in BINARY_FIELDS.items():
-            v = form.get(f)
+            v = str(form.get(f, "") or "").strip()
             if v not in ("0", "1"):
                 errors.append(f"{label}: please select Yes or No.")
             else:
                 clean[f] = int(v)
-        hiv = form.get("hiv_status")
-        if hiv not in HIV_VALUES:
+        hiv = str(form.get("hiv_status", "") or "").strip()
+        hiv_norm = hiv.strip().capitalize()
+        if hiv_norm not in HIV_VALUES:
             errors.append("HIV status must be Positive or Negative (the model was not trained on 'unknown').")
         else:
-            clean["hiv_status"] = hiv
+            clean["hiv_status"] = hiv_norm
         if clean.get("cough_duration_weeks", 0) == 0 and (clean.get("productive_cough") or clean.get("hemoptysis")):
             errors.append("Productive cough / haemoptysis recorded but cough duration is 0 weeks.")
         return clean, errors
 
+    def _clip(self, inputs):
+        return {k: (min(max(v, self.input_range[k][0]), self.input_range[k][1]) if k in self.input_range else v)
+                for k, v in inputs.items()}
+
+    def input_notes(self, inputs):
+        """Human-readable notes for values outside the training range (they are limited before prediction)."""
+        notes = []
+        for k, (lo, hi) in self.input_range.items():
+            v = inputs.get(k)
+            if v is not None and not lo <= v <= hi:
+                edge = lo if v < lo else hi
+                notes.append(f"{NUMERIC_FIELDS[k][2]} {v:g} is outside the range the clinical model was trained on "
+                             f"({lo:.1f}-{hi:.1f}); it was treated as {edge:.1f}.")
+        return notes
+
     def _frame(self, inputs):
-        return pd.DataFrame([{k: inputs[k] for k in self.meta["required_inputs"]}])
+        clipped = self._clip(inputs)
+        return pd.DataFrame([{k: clipped[k] for k in self.meta["required_inputs"]}])
 
     def predict(self, inputs):
         return float(self.pipeline.predict_proba(self._frame(inputs))[:, 1][0])

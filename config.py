@@ -16,11 +16,19 @@ CNN_CLASS_NAMES = ["NORMAL", "TB"] # alphabetical folder order -> sigmoid output
 CNN_THRESHOLD = 0.55               # validation table: highest threshold keeping sensitivity 0.990 (spec 0.978)
 CNN_VERSION = "tb_xray_best.keras (custom 3-block CNN, test AUC 0.986)"
 
+# ---------------- clinical model ----------------
+# 0.35 maximises both F1 (0.685) and Youden's J (sens 0.732 + spec 0.828 - 1) in the notebook's out-of-fold
+# threshold table. The notebook's 0.147 (>= 90% sensitivity) flagged ~41% of non-TB patients as positive.
+CLINICAL_THRESHOLD = 0.35
+# Numeric inputs are limited to the training range (mean +- 3 SD) before prediction: a logistic regression
+# extrapolates linearly, so e.g. SpO2 65% (17 SD below the training mean) would otherwise force P(TB) to ~0.
+CLINICAL_CLIP_SD = 3.0
+
 # ---------------- fusion (documented assumption, see fusion/fusion.py) ----------------
 FUSION_WEIGHTS = {"cnn": 0.5, "clinical": 0.5}   # equal weights: NO paired data exists to estimate them
 BORDERLINE_MARGIN = 0.10           # a model within +-0.10 of its own threshold = borderline
 CONFLICT_GAP = 0.50                # |p_cnn - p_clinical| >= 0.50 = strong conflict
-FUSION_VERSION = "fusion-rule-1.0 (equal-weight average, agreement-aware)"
+FUSION_VERSION = "fusion-rule-1.1 (equal-weight average, agreement-aware)"
 
 # ---------------- app ----------------
 DATABASE_PATH = BASE_DIR / "database" / "tb_screening.db"
