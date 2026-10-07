@@ -1,3 +1,13 @@
+---
+title: LungLens TB Multimodal Screening
+emoji: 🫁
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # TB-DATA-SCIENCE-MULTIMODIAL-MODELLING
 this contains TB classification and prediction multimodal system
 
