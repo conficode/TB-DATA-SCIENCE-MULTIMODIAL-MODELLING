@@ -114,15 +114,22 @@ There is **no automatic retraining**. Confirmed cases are only used manually via
 Stop the server with `Ctrl+C`. Saved cases persist in `database/tb_screening.db`.
 
 ---
-## 6. Free deployment (Railway)
-The app reads the CNN weights straight from `tb_xray_best.keras` with `h5py` and runs the network in NumPy, so it needs about 280 MB of RAM instead of about 1.5 GB with TensorFlow. That fits Railway's trial (1 GB) and free (0.5 GB) plans.
+## 6. Free deployment (PythonAnywhere, no card needed)
+The app needs no TensorFlow (about 280 MB of RAM), so it runs on PythonAnywhere's free Beginner account. The app stays online and doesn't sleep.
 
-1. Sign in at https://railway.com with your GitHub account.
-2. Click **New Project → Deploy from GitHub repo** and pick this repository. Railway builds the `Dockerfile` (see `railway.json`). During the build, `scripts/fetch_models.py` downloads the LFS model files (`.keras`, `.joblib`) from GitHub if the clone only contains pointers.
-3. Open the service, go to **Settings → Networking → Generate Domain**, and use port **7860** if it asks for one.
-4. Open `https://<name>.up.railway.app/health`. You should see `"ready": true` for both models and `"loaded_from": "tb_xray_best.keras"`.
+1. Create a free **Beginner** account at https://www.pythonanywhere.com.
+2. **Web** tab → **Add a new web app** → **Next** → **Manual configuration** → **Python 3.11** → **Next**.
+3. **Consoles** tab → **Bash**, then run:
+   ```bash
+   curl -sL https://raw.githubusercontent.com/conficode/TB-DATA-SCIENCE-MULTIMODIAL-MODELLING/main/scripts/pythonanywhere_setup.sh | bash
+   ```
+   The script clones the repo, installs the dependencies, checks that both models load, and writes the WSGI file.
+4. **Web** tab → **Virtualenv** → enter `/home/<username>/.virtualenvs/lunglens` → click **Reload**.
+5. Open `https://<username>.pythonanywhere.com/health`.
 
-Storage is ephemeral, so saved cases are lost on redeploy. The same `Dockerfile` also works on other container hosts, and `render.yaml` is kept for Render.
+Free accounts can't download Git LFS files, so on PythonAnywhere the CNN loads `tb_xray_weights.npz`. That file holds the same weights exported from `tb_xray_best.keras`. To update the app, rerun the script and click **Reload**.
+
+Other hosts: `Dockerfile` (any container host, e.g. Railway with `railway.json`) and `render.yaml` (Render). On those hosts the app loads `tb_xray_best.keras` directly.
 
 ---
 ## 7. Presenting the system (talking points)
