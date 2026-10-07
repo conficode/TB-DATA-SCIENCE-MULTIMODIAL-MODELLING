@@ -115,18 +115,27 @@ class ClinicalModel:
         clipped = self._clip(inputs)
         return pd.DataFrame([{k: clipped[k] for k in self.meta["required_inputs"]}])
 
-    def predict(self, inputs):
-        return float(self.pipeline.predict_proba(self._frame(inputs))[:, 1][0])
-
-    def explain(self, inputs, top=8):
+    def _contributions(self, inputs):
         """Exact SHAP for logistic regression (interventional, mean background):
-        contribution_j = coef_j * (x_j - mean_j) in log-odds. Equivalent to shap.LinearExplainer."""
+        contribution_j = coef_j * (x_j - mean_j) in log-odds, so logit = base_logit + sum(contributions).
+        Terms in C.CLINICAL_NEUTRAL_TERMS are neutralised (contribution 0, see config.py)."""
         df = self._frame(inputs)
         xt = self.pipeline[:-1].transform(df)[0]
         model = self.pipeline.named_steps["model"]
         coef = model.coef_[0]
         contrib = coef * (xt - self.bg_mean)
+        for i, name in enumerate(self.feature_names):
+            if name in C.CLINICAL_NEUTRAL_TERMS:
+                contrib[i] = 0.0
         base_logit = float(model.intercept_[0] + coef @ self.bg_mean)
+        return df, contrib, base_logit
+
+    def predict(self, inputs):
+        _, contrib, base_logit = self._contributions(inputs)
+        return float(1 / (1 + np.exp(-(base_logit + contrib.sum()))))
+
+    def explain(self, inputs, top=8):
+        df, contrib, base_logit = self._contributions(inputs)
         engineered = self.pipeline.named_steps["features"].transform(df).iloc[0]
         rows = []
         for name, c in zip(self.feature_names, contrib):

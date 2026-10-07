@@ -5,11 +5,10 @@
 <title>TBXpert</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' ><rect width='32' height='32' rx='8' fill='%23FFD000'/><path d='M16 7v9M16 12l-3 3M16 12l3 3' stroke='%230a0a0a' stroke-width='2' stroke-linecap='round' fill='none'/><path d='M12.5 13.5c-3 .5-5 4.5-5 8.5 0 2 1.5 3 3 2.5l3-1.2c.8-.3 1-1 1-1.8v-6.5c0-1-.9-1.7-2-1.5zM19.5 13.5c3 .5 5 4.5 5 8.5 0 2-1.5 3-3 2.5l-3-1.2c-.8-.3-1-1-1-1.8v-6.5c0-1 .9-1.7 2-1.5z' fill='%230a0a0a'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-<div class="bg-grid"></div>
 <aside class="sidebar">
   <div class="brand"><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#FFD000"/><path d="M16 7v9M16 12l-3 3M16 12l3 3" stroke="#0a0a0a" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M12.5 13.5c-3 .5-5 4.5-5 8.5 0 2 1.5 3 3 2.5l3-1.2c.8-.3 1-1 1-1.8v-6.5c0-1-.9-1.7-2-1.5zM19.5 13.5c3 .5 5 4.5 5 8.5 0 2-1.5 3-3 2.5l-3-1.2c-.8-.3-1-1-1-1.8v-6.5c0-1 .9-1.7 2-1.5z" fill="#0a0a0a"/></svg><div><b>TB<span>Xpert</span></b><small>Multimodal TB screening</small></div></div>
   <nav>
@@ -23,9 +22,10 @@
     <div class="ms {{ 'ok' if status.cnn.ready else 'bad' }}"><span></span>X-ray CNN</div>
     <div class="ms {{ 'ok' if status.clinical.ready else 'bad' }}"><span></span>Clinical model</div>
   </div>
-  <div class="disclaimer">Research prototype. AI-assisted screening support only. It does <b>not</b> diagnose TB; all results need clinical confirmation.</div>
+  <div class="disclaimer">Screening support only. TBXpert does <b>not</b> diagnose TB. Confirm every result clinically.</div>
 </aside>
 <main>
+  <div class="topbar"><b>TB<span>Xpert</span></b></div>
   {% with msgs = get_flashed_messages(with_categories=true) %}{% if msgs %}
     <div class="flashes">{% for cat, m in msgs %}<div class="flash {{ cat }}">{{ m }}</div>{% endfor %}</div>
   {% endif %}{% endwith %}

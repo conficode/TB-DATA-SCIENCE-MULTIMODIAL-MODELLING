@@ -1,26 +1,17 @@
 {% extends "base.html" %}{% block content %}
 <header class="page-head">
-  <div><p class="eyebrow">Multimodal AI · Chest X-ray + Clinical data</p><h1>Screening overview</h1>
-  <p class="muted">Combine an X-ray CNN and a clinical risk model into one transparent, agreement-aware TB screening assessment.</p></div>
-  <a class="btn primary big" href="{{ url_for('new_screening') }}">＋ New screening</a>
+  <div><h1>Overview</h1>
+  <p class="muted">Chest X-ray and clinical findings, combined into one TB screening result.</p></div>
+  <a class="btn primary" href="{{ url_for('new_screening') }}">New screening</a>
 </header>
 <section class="stats">
-  <div class="stat"><span class="ic violet">▤</span><div><b>{{ stats.cases or 0 }}</b><p>Cases screened</p></div></div>
-  <div class="stat"><span class="ic rose">●</span><div><b>{{ stats.high_suspicion or 0 }}</b><p>High suspicion</p></div></div>
-  <div class="stat"><span class="ic amber">⚑</span><div><b>{{ stats.discordant or 0 }}</b><p>Models disagreed</p></div></div>
-  <div class="stat"><span class="ic teal">✓</span><div><b>{{ stats.confirmed or 0 }}</b><p>Clinician-confirmed</p></div></div>
-</section>
-<section class="flow card">
-  <h3>How an assessment is made</h3>
-  <div class="steps">
-    <div><span>1</span><b>Clinical inputs</b><p>14 routine findings → logistic-regression pipeline</p></div>
-    <div><span>2</span><b>Chest X-ray</b><p>224×224 RGB → CNN with Grad-CAM</p></div>
-    <div><span>3</span><b>Agreement check</b><p>each model vs its own validated threshold</p></div>
-    <div><span>4</span><b>Fused assessment</b><p>weighted probability + uncertainty flag</p></div>
-  </div>
+  <div class="stat"><b>{{ stats.cases or 0 }}</b><p>Cases screened</p></div>
+  <div class="stat"><b>{{ stats.high_suspicion or 0 }}</b><p>High suspicion</p></div>
+  <div class="stat"><b>{{ stats.discordant or 0 }}</b><p>Models disagreed</p></div>
+  <div class="stat"><b>{{ stats.confirmed or 0 }}</b><p>Confirmed by a clinician</p></div>
 </section>
 <section class="card">
-  <div class="card-head"><h3>Recent cases</h3><a href="{{ url_for('cases') }}" class="link">View all →</a></div>
+  <div class="card-head"><h3>Recent cases</h3><a href="{{ url_for('cases') }}" class="link">View all</a></div>
   {% include "_case_table.html" %}
 </section>
 {% endblock %}

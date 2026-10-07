@@ -1,5 +1,5 @@
 {% extends "base.html" %}{% block content %}
-<header class="page-head"><div><p class="eyebrow">Case registry</p><h1>All cases</h1></div>
-<a class="btn primary" href="{{ url_for('new_screening') }}">＋ New screening</a></header>
+<header class="page-head"><div><h1>Cases</h1></div>
+<a class="btn primary" href="{{ url_for('new_screening') }}">New screening</a></header>
 <section class="card">{% include "_case_table.html" %}</section>
 {% endblock %}

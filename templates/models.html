@@ -1,5 +1,5 @@
 {% extends "base.html" %}{% block content %}
-<header class="page-head"><div><p class="eyebrow">Transparency</p><h1>Models &amp; method</h1></div></header>
+<header class="page-head"><div><h1>Models and method</h1></div></header>
 <section class="grid-2">
 <div class="card"><h3>Chest X-ray CNN</h3><dl class="audit">
 <dt>Input</dt><dd>224×224×3 RGB, pixels 0–255 (Rescaling 1/255 inside the model)</dd><dt>Architecture</dt><dd>Augmentation (inactive at inference) → 3× Conv/MaxPool (32/64/128) → Dense 128 → Dropout → Sigmoid</dd>
@@ -11,11 +11,12 @@
 <div class="card"><h3>Clinical model</h3><dl class="audit">
 <dt>Input</dt><dd>14 raw findings → 12 model features (incl. engineered core-symptom count)</dd><dt>Pipeline</dt><dd>Feature engineering → median/mode imputation → standardisation → one-hot → logistic regression</dd>
 <dt>Output</dt><dd>Calibrated P(TB) (~30% base rate, synthetic data)</dd><dt>Threshold</dt><dd>{{ status.clinical.threshold }} (best F1 and Youden's J in the notebook's threshold table)</dd>
-<dt>Input range</dt><dd>Numeric inputs outside the training range (mean ± 3 SD, e.g. SpO₂ 91–100%, BMI 11–33) are limited to that range before prediction, and the result page says so</dd></dl>
+<dt>Input range</dt><dd>Numeric inputs outside the training range (mean ± 3 SD, e.g. SpO₂ 91–100%, BMI 11–33) are limited to that range before prediction, and the result page says so</dd>
+<dt>Plausibility</dt><dd>Two learned effects that contradict clinical knowledge are neutralised: fever's separate term (fever still counts as a core symptom) and SpO₂ (low SpO₂ lowered the risk in the training data)</dd></dl>
 <h4>Training out-of-fold, threshold 0.35</h4>
 <table class="table mini"><tr><th>Precision</th><th>Sensitivity</th><th>Specificity</th><th>F1</th><th>ROC-AUC (test)</th></tr>
 <tr><td>0.645</td><td>0.732</td><td>0.828</td><td>0.685</td><td>0.855</td></tr></table>
-<p class="hint">Previous screening threshold 0.147 (test set): sensitivity 0.901 but specificity only 0.587.</p></div>
+<p class="hint">Previous screening threshold 0.147 (test set): sensitivity 0.901 but specificity only 0.587. Metrics were measured before the plausibility adjustment.</p></div>
 </section>
 <section class="card"><h3>Fusion</h3>
 <p>Each model is judged against its own threshold. Then <code>fused = 0.5·p<sub>CNN</sub> + 0.5·p<sub>clinical</sub></code>, compared with the matching fused threshold <code>0.5·{{ cfg.CNN_THRESHOLD }} + 0.5·{{ status.clinical.threshold }}</code>.

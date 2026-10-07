@@ -1,5 +1,5 @@
 {% if cases %}
-<table class="table"><thead><tr><th>Case</th><th>Date</th><th>X-ray</th><th>Clinical</th><th>Fused</th><th>Agreement</th><th>Assessment</th><th>Confirmed</th></tr></thead><tbody>
+<table class="table"><thead><tr><th>Case</th><th>Date</th><th>X-ray</th><th>Clinical</th><th>Fused</th><th>Agreement</th><th>Assessment</th><th>Outcome</th></tr></thead><tbody>
 {% for c in cases %}<tr onclick="location.href='{{ url_for('view_case', case_id=c.case_id) }}'">
 <td><b>{{ c.case_id }}</b><br><small class="muted">{{ c.patient_ref }}</small></td><td><small>{{ c.created_at[:16] }}</small></td>
 <td>{{ '%.0f'|format((c.cnn_probability or 0)*100) }}%</td><td>{{ '%.0f'|format((c.clinical_probability or 0)*100) }}%</td>

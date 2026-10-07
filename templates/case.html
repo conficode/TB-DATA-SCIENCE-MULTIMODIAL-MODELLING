@@ -1,11 +1,11 @@
 {% extends "base.html" %}{% from "_macros.html" import gauge %}{% block content %}
 {% set p = d.prediction %}{% set f = p.details.fusion %}{% set t = p.details.thresholds %}
-<header class="page-head"><div><p class="eyebrow">Case {{ d.case.case_id }} · {{ d.case.patient_ref }} · {{ d.case.created_at }}</p>
-<h1>Screening assessment</h1></div><a class="btn" href="{{ url_for('new_screening') }}">＋ New screening</a></header>
+<header class="page-head"><div><p class="eyebrow">{{ d.case.case_id }} · {{ d.case.patient_ref }} · {{ d.case.created_at[:16] }}</p>
+<h1>Screening result</h1></div><a class="btn" href="{{ url_for('new_screening') }}">New screening</a></header>
 
 <section class="verdict {{ f.agreement }} unc-{{ f.uncertainty }}">
   <div class="v-icon">{{ {'concordant_positive':'!','concordant_negative':'✓','discordant':'⚑'}[f.agreement] }}</div>
-  <div class="v-text"><p class="eyebrow">Final screening assessment</p><h2>{{ f.assessment }}</h2><p>{{ f.recommendation }}</p></div>
+  <div class="v-text"><h2>{{ f.assessment }}</h2><p>{{ f.recommendation }}</p></div>
   <div class="v-side"><span class="pill unc {{ f.uncertainty }}">{{ f.uncertainty|capitalize }} uncertainty</span>
     <span class="pill {{ f.agreement }}">{{ {'concordant_positive':'Models agree · TB','concordant_negative':'Models agree · no TB','discordant':'Models disagree'}[f.agreement] }}</span></div>
 </section>
@@ -38,7 +38,7 @@
 
 <section class="grid-2">
   <div class="card">
-    <h3>X-ray explanation <small class="muted">Grad-CAM</small></h3>
+    <h3>Where the X-ray model looked</h3>
     {% if p.details.gradcam %}
     <div class="xray-pair"><figure><img src="{{ url_for('static', filename='gradcam/' ~ d.case.case_id ~ '_input.png') }}"><figcaption>Model input (224×224)</figcaption></figure>
     <figure><img src="{{ url_for('static', filename='gradcam/' ~ d.case.case_id ~ '_cam.png') }}"><figcaption>Grad-CAM overlay</figcaption></figure></div>
@@ -46,7 +46,7 @@
     <p class="hint">Highlights regions that most influenced the CNN's output. It is a model explanation, not evidence of a lesion.</p>
   </div>
   <div class="card">
-    <h3>Clinical explanation <small class="muted">SHAP</small></h3>
+    <h3>What drove the clinical score</h3>
     <div class="shap">
       {% for r in p.details.shap.rows %}
       <div class="shap-row"><span class="sf">{{ r.feature }} <small>= {{ r.value }}</small></span>

@@ -23,6 +23,12 @@ CLINICAL_THRESHOLD = 0.35
 # Numeric inputs are limited to the training range (mean +- 3 SD) before prediction: a logistic regression
 # extrapolates linearly, so e.g. SpO2 65% (17 SD below the training mean) would otherwise force P(TB) to ~0.
 CLINICAL_CLIP_SD = 3.0
+# Clinical plausibility guard: model terms whose learned direction contradicts clinical knowledge are
+# neutralised (held at the average training patient's value, contribution 0). In the training data fever's
+# own term is negative (fever is already counted in core_symptom_count, and the model offsets it), and LOW
+# SpO2 lowered P(TB). Without the guard a feverish, hypoxic patient scores LOWER than the same patient
+# without those findings. Fever still counts through the core-symptom count. Set to () to disable.
+CLINICAL_NEUTRAL_TERMS = ("bin__fever", "num__spo2")
 
 # ---------------- fusion (documented assumption, see fusion/fusion.py) ----------------
 FUSION_WEIGHTS = {"cnn": 0.5, "clinical": 0.5}   # equal weights: NO paired data exists to estimate them

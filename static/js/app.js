@@ -10,6 +10,6 @@ if (dz && input) {
 const form = document.getElementById("screen-form");
 if (form) form.addEventListener("submit", () => {
   const o = document.createElement("div"); o.className = "loading on";
-  o.innerHTML = '<div><div class="spinner"></div><h3 style="justify-content:center">Running both models…</h3><p class="muted">CNN · clinical model · fusion · explanations</p></div>';
+  o.innerHTML = '<div><div class="spinner"></div><h3 style="justify-content:center">Running the screening…</h3></div>';
   document.body.appendChild(o);
 });
