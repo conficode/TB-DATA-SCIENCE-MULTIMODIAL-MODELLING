@@ -5,7 +5,6 @@ numpy>=2.0
 pandas>=2.2
 joblib>=1.4
 pillow>=10
-matplotlib>=3.8
 h5py>=3.10                    # reads the weights inside tb_xray_best.keras (no TensorFlow needed)
 gunicorn>=22                  # production server (Linux deployment)
 # TensorFlow is NOT needed to run the app: the CNN runs in NumPy with weights read from the .keras file.

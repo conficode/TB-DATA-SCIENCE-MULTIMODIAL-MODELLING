@@ -42,6 +42,18 @@ def _maxpool_backward(grad, idx, shape):
     return out
 
 
+# matplotlib's 'jet' colormap (same segment data, 256-entry lookup table) without the dependency
+_JET_SEGMENTS = [((0, .35, .66, .89, 1), (0, 0, 1, 1, .5)),
+                 ((0, .125, .375, .64, .91, 1), (0, 0, 1, 1, 0, 0)),
+                 ((0, .11, .34, .65, 1), (.5, 1, 1, 0, 0))]
+_JET_LUT = np.stack([np.interp(np.linspace(0, 1, 256), x, y) for x, y in _JET_SEGMENTS], axis=-1)
+
+
+def _jet(values):
+    """values in [0, 1] -> RGB floats in [0, 1], identical to matplotlib.cm.jet(values)[..., :3]."""
+    return _JET_LUT[np.clip((values * 256).astype(int), 0, 255)]
+
+
 def _resize_bilinear(img, size):
     """tf.image.resize(method='bilinear', antialias=False): half-pixel centres, edge clamping."""
     out_h, out_w = size
@@ -157,10 +169,7 @@ class CNNModel:
         weights = grads.mean(axis=(0, 1))
         cam = np.maximum((conv * weights).sum(-1), 0)
         cam = cam / cam.max() if cam.max() > 0 else cam
-        import matplotlib
-        matplotlib.use("Agg")
-        from matplotlib import cm
-        heat = Image.fromarray(np.uint8(cm.jet(cam)[..., :3] * 255)).resize(C.CNN_IMG_SIZE, Image.BILINEAR)
+        heat = Image.fromarray(np.uint8(_jet(cam) * 255)).resize(C.CNN_IMG_SIZE, Image.BILINEAR)
         base = x[0]
         overlay = np.clip(np.asarray(heat, dtype=np.float32) * alpha + base, 0, 255).astype(np.uint8)
         Image.fromarray(overlay).save(out_path)
