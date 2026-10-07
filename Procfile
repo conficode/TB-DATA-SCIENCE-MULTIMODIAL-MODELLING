@@ -1,1 +1,1 @@
-web: gunicorn app:app --workers 1 --threads 2 --timeout 120 --bind 0.0.0.0:${PORT:-5000}
+web: python scripts/fetch_models.py && gunicorn app:app --workers 1 --threads 2 --timeout 120 --bind 0.0.0.0:${PORT:-5000}

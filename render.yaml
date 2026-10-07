@@ -3,7 +3,7 @@ services:
     name: tb-multimodal
     runtime: python
     plan: free
-    buildCommand: pip install --no-cache-dir -r requirements.txt
+    buildCommand: pip install --no-cache-dir -r requirements.txt && python scripts/fetch_models.py
     startCommand: gunicorn app:app --workers 1 --threads 2 --timeout 120 --bind 0.0.0.0:$PORT
     healthCheckPath: /health
     envVars:
