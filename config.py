@@ -6,6 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent
 
 # ---------------- model files (place your files here) ----------------
 CNN_MODEL_PATH = Path(os.getenv("CNN_MODEL_PATH", BASE_DIR / "models" / "cnn" / "tb_xray_best.keras"))
+CNN_WEIGHTS_PATH = Path(os.getenv("CNN_WEIGHTS_PATH", BASE_DIR / "models" / "cnn" / "tb_xray_weights.npz"))  # NumPy export used at runtime
 CLINICAL_MODEL_PATH = Path(os.getenv("CLINICAL_MODEL_PATH", BASE_DIR / "models" / "structured" / "tb_clinical_model.joblib"))
 SHAP_BACKGROUND_PATH = BASE_DIR / "models" / "structured" / "shap_background.json"
 

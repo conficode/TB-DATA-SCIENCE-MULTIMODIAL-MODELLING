@@ -4,7 +4,7 @@ The models are stored with Git LFS. Most hosts (Railway, Render, ...) clone the 
 WITHOUT fetching LFS objects, so the files on the server are tiny text pointers.
 This script detects missing/pointer files and downloads the real ones from GitHub.
 
-Override the source with MODEL_BASE_URL (or CNN_MODEL_URL / CLINICAL_MODEL_URL).
+Override the source with MODEL_BASE_URL (or CLINICAL_MODEL_URL).
 """
 import os
 import sys
@@ -18,8 +18,8 @@ BASE_URL = os.getenv(
     "MODEL_BASE_URL",
     "https://media.githubusercontent.com/media/conficode/TB-DATA-SCIENCE-MULTIMODIAL-MODELLING/main",
 )
+# The CNN runs from models/cnn/tb_xray_weights.npz (a regular git file), so only the LFS clinical model is fetched.
 FILES = [
-    (C.CNN_MODEL_PATH, os.getenv("CNN_MODEL_URL", f"{BASE_URL}/models/cnn/tb_xray_best.keras")),
     (C.CLINICAL_MODEL_PATH, os.getenv("CLINICAL_MODEL_URL", f"{BASE_URL}/models/structured/tb_clinical_model.joblib")),
 ]
 
