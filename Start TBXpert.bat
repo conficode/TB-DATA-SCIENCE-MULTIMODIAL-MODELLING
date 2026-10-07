@@ -1,5 +1,5 @@
 @echo off
-title LungLens - TB screening
+title TBXpert - TB screening
 cd /d "%~dp0"
 
 if not exist ".venv\Scripts\python.exe" (

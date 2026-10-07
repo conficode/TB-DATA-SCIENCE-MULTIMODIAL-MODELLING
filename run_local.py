@@ -1,4 +1,4 @@
-"""Start LungLens on this computer and open it in the browser (used by Start LungLens.bat)."""
+"""Start TBXpert on this computer and open it in the browser (used by Start TBXpert.bat)."""
 import os
 import socket
 import sys
@@ -31,7 +31,7 @@ def main():
 
     port = free_port()
     url = f"http://127.0.0.1:{port}"
-    print(f"\nLungLens is running at {url}")
+    print(f"\nTBXpert is running at {url}")
     print("Keep this window open during the demo. Close it (or press Ctrl+C) to stop.\n", flush=True)
     if not os.getenv("NO_BROWSER"):
         threading.Timer(1.0, webbrowser.open, args=[url]).start()

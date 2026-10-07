@@ -1,5 +1,5 @@
 ---
-title: LungLens TB Multimodal Screening
+title: TBXpert TB Multimodal Screening
 emoji: 🫁
 colorFrom: blue
 colorTo: indigo
@@ -11,7 +11,7 @@ pinned: false
 # TB-DATA-SCIENCE-MULTIMODIAL-MODELLING
 this contains TB classification and prediction multimodal system
 
-LungLens is an **AI-assisted screening / decision-support prototype** that combines a chest X-ray CNN and a clinical
+TBXpert is an **AI-assisted screening / decision-support prototype** that combines a chest X-ray CNN and a clinical
 (structured-data) model. It is **not** a diagnostic system: every result requires clinical confirmation.
 
 ---
