@@ -30,7 +30,7 @@ db.init_db()
 
 
 def model_status():
-    return {"cnn": {"ready": CNN.ready, "error": CNN.error, "version": C.CNN_VERSION, "threshold": C.CNN_THRESHOLD},
+    return {"cnn": {"ready": CNN.ready, "error": CNN.error, "loaded_from": CNN.source, "version": C.CNN_VERSION, "threshold": C.CNN_THRESHOLD},
             "clinical": {"ready": CLINICAL.ready, "error": CLINICAL.error,
                          "version": CLINICAL.version if CLINICAL.ready else None,
                          "threshold": CLINICAL.threshold if CLINICAL.ready else None}}

@@ -29,7 +29,7 @@ LungLens is an **AI-assisted screening / decision-support prototype** that combi
 1. **Resize interpolation.** Your notebook's `predict_xray()` used `load_img` (nearest-neighbour by default), but training used bilinear resizing. The app uses **bilinear**, verified pixel-identical (max difference 0.0) to the training loader.
 2. **`tb_clinical.py` must stay in the project root.** The joblib pipeline references `tb_clinical.FeatureEngineer`.
 3. **scikit-learn must be exactly 1.8.0** to unpickle the clinical model.
-4. **No TensorFlow at runtime.** The CNN's weights are exported from the `.keras` file to `models/cnn/tb_xray_weights.npz` and the network runs in NumPy (`inference/cnn_model.py`). On PNG X-rays its predictions and Grad-CAM weights match Keras to float32 precision. On JPEGs, small decoder differences can shift P(TB) by about 0.001. The app needs about 220 MB of RAM instead of 1.5 GB. After retraining, regenerate the weights with `pip install tensorflow` and `python scripts/export_cnn_weights.py --verify some_xray.png`.
+4. **No TensorFlow at runtime.** The CNN's weights are read directly from `tb_xray_best.keras` with `h5py`, and the network runs in NumPy (`inference/cnn_model.py`). `models/cnn/tb_xray_weights.npz` is a backup copy, used only when the `.keras` file is missing. On PNG X-rays its predictions and Grad-CAM weights match Keras to float32 precision. On JPEGs, small decoder differences can shift P(TB) by about 0.001. The app needs about 220 MB of RAM instead of 1.5 GB. After retraining, regenerate the weights with `pip install tensorflow` and `python scripts/export_cnn_weights.py --verify some_xray.png`.
 5. **Fusion cannot be fitted yet (most important).** The X-ray images and the clinical records are **different, unpaired datasets**, so no patient has both. Fusion weights and fused test metrics therefore **cannot be estimated** from existing data. Equal weights are used and clearly labelled as an assumption. Once clinicians confirm outcomes for real paired cases, `scripts/evaluate_fusion.py` chooses the weight on a validation split and reports CNN vs clinical vs fusion on an untouched test split.
 6. **HIV status** accepts only Positive/Negative (the only levels in training).
 
@@ -49,7 +49,7 @@ tb_multimodal/
 ├── database/db.py             SQLite schema + queries (AI predictions and confirmed outcomes kept separate)
 ├── scripts/evaluate_fusion.py controlled CNN vs clinical vs fusion evaluation on confirmed cases
 ├── templates/  static/        dashboard UI (HTML/CSS/JS)
-├── models/cnn/                tb_xray_weights.npz (used by the app) + tb_xray_best.keras (source)
+├── models/cnn/                tb_xray_best.keras (loaded by the app) + tb_xray_weights.npz (backup)
 ├── models/structured/         ← put tb_clinical_model.joblib here (shap_background.json included)
 ├── uploads/                   uploaded X-rays
 ├── requirements.txt  Procfile  README.md
@@ -89,7 +89,7 @@ There is **no automatic retraining**. Confirmed cases are only used manually via
 1. Install **Python 3.11 or 3.12** and **VS Code** with the *Python* extension.
 2. Unzip `tb_multimodal.zip`, then in VS Code use **File → Open Folder → tb_multimodal**.
 3. Make sure the model files are in place (they come with the repository; run `git lfs pull` if the `.joblib` file is a tiny text pointer):
-   * `tb_xray_weights.npz` → `models/cnn/`
+   * `tb_xray_best.keras` → `models/cnn/`
    * `tb_clinical_model.joblib` → `models/structured/`
 4. Open a terminal (**Terminal → New Terminal**) and create a virtual environment:
    ```bash
@@ -114,16 +114,15 @@ There is **no automatic retraining**. Confirmed cases are only used manually via
 Stop the server with `Ctrl+C`. Saved cases persist in `database/tb_screening.db`.
 
 ---
-## 6. Free deployment (Render)
-The app needs about 220 MB of RAM because it doesn't use TensorFlow, so Render's **free** plan (512 MB) is enough.
+## 6. Free deployment (Railway)
+The app reads the CNN weights straight from `tb_xray_best.keras` with `h5py` and runs the network in NumPy, so it needs about 280 MB of RAM instead of about 1.5 GB with TensorFlow. That fits Railway's trial (1 GB) and free (0.5 GB) plans.
 
-1. Sign in at https://render.com with your GitHub account. The free plan doesn't need a card.
-2. Choose **New → Blueprint**, select this repository, and click **Apply**. Render reads `render.yaml`, installs the dependencies, downloads the LFS clinical model with `scripts/fetch_models.py`, and generates `SECRET_KEY`.
-3. When the deploy shows **Live**, open the `https://<name>.onrender.com` URL and check `/health` (both models should be `ready: true`).
+1. Sign in at https://railway.com with your GitHub account.
+2. Click **New Project → Deploy from GitHub repo** and pick this repository. Railway builds the `Dockerfile` (see `railway.json`). During the build, `scripts/fetch_models.py` downloads the LFS model files (`.keras`, `.joblib`) from GitHub if the clone only contains pointers.
+3. Open the service, go to **Settings → Networking → Generate Domain**, and use port **7860** if it asks for one.
+4. Open `https://<name>.up.railway.app/health`. You should see `"ready": true` for both models and `"loaded_from": "tb_xray_best.keras"`.
 
-Free-plan notes: the service sleeps after about 15 minutes without traffic, and the first request then takes about 1 minute. Open the site a few minutes before a demo. Storage is ephemeral, so saved cases are lost on restart or redeploy.
-
-A `Dockerfile` is also included for any container host. Hugging Face Docker Spaces now need a paid plan.
+Storage is ephemeral, so saved cases are lost on redeploy. The same `Dockerfile` also works on other container hosts, and `render.yaml` is kept for Render.
 
 ---
 ## 7. Presenting the system (talking points)

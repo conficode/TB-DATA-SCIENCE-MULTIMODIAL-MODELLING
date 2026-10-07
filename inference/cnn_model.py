@@ -1,11 +1,15 @@
 """CNN inference: exact training preprocessing + Grad-CAM (logic from the xray notebook).
 
 The network (Rescaling -> 3x [Conv3x3+ReLU, MaxPool2] -> Flatten -> Dense128+ReLU -> Dense1+sigmoid)
-is evaluated in pure NumPy from weights exported by scripts/export_cnn_weights.py. This avoids
-TensorFlow at runtime (~1.5 GB RAM) so the app fits free 512 MB hosts. Outputs match Keras to
-float32 precision (verified by scripts/export_cnn_weights.py --verify).
+is evaluated in pure NumPy. The weights are read straight from tb_xray_best.keras (a zip holding
+model.weights.h5) with h5py, so TensorFlow (~1.5 GB RAM) is not needed at runtime and the app fits
+512 MB hosts. Outputs match Keras to float32 precision (verified by scripts/export_cnn_weights.py --verify).
+If the .keras file is unavailable, the NumPy export tb_xray_weights.npz is used instead.
 """
 import logging
+import re
+import tempfile
+import zipfile
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 from PIL import Image
@@ -55,15 +59,59 @@ def _resize_bilinear(img, size):
     return top + (bot - top) * fy[:, None, None]
 
 
+def _is_real_file(path):
+    """False for a missing file or a Git LFS pointer (hosts that clone without LFS)."""
+    if not path.exists() or path.stat().st_size < 1024:
+        return False
+    with open(path, "rb") as f:
+        return not f.read(40).startswith(b"version https://git-lfs")
+
+
+def load_keras_weights(path):
+    """Read the Conv2D/Dense kernels and biases from a Keras-3 .keras file without TensorFlow."""
+    import h5py
+    with zipfile.ZipFile(path) as z, tempfile.TemporaryDirectory() as tmp:
+        h5_path = z.extract("model.weights.h5", tmp)                 # extract to disk: keeps RAM low
+        with h5py.File(h5_path, "r") as f:
+            layers = {}
+            for name, grp in f["layers"].items():
+                if "vars" in grp and len(grp["vars"]) == 2:
+                    layers[name] = (grp["vars"]["0"][()], grp["vars"]["1"][()])
+
+    def ordered(prefix):        # Keras names layers conv2d, conv2d_1, conv2d_2 ... in model order
+        names = [n for n in layers if re.fullmatch(rf"{prefix}(_\d+)?", n)]
+        return sorted(names, key=lambda n: int(n.rsplit("_", 1)[1]) if n != prefix else 0)
+
+    convs, denses = ordered("conv2d"), ordered("dense")
+    if len(convs) != 3 or len(denses) != 2:
+        raise ValueError(f"unexpected architecture in {path.name}: {sorted(layers)}")
+    w = {}
+    for i, n in enumerate(convs, 1):
+        w[f"conv{i}_w"], w[f"conv{i}_b"] = layers[n]
+    for i, n in enumerate(denses, 1):
+        w[f"dense{i}_w"], w[f"dense{i}_b"] = layers[n]
+    expected = {"conv1_w": (3, 3, 3, 32), "conv2_w": (3, 3, 32, 64), "conv3_w": (3, 3, 64, 128),
+                "dense1_w": (26 * 26 * 128, 128), "dense2_w": (128, 1)}
+    for k, shape in expected.items():
+        if w[k].shape != shape:
+            raise ValueError(f"{k} has shape {w[k].shape}, expected {shape}")
+    return {k: v.astype(np.float32) for k, v in w.items()}
+
+
 class CNNModel:
-    def __init__(self, path=C.CNN_WEIGHTS_PATH):
-        self.w, self.error, self.path = None, None, path
+    def __init__(self, path=C.CNN_MODEL_PATH, fallback=C.CNN_WEIGHTS_PATH):
+        self.w, self.error, self.path, self.source = None, None, path, None
         try:
-            if not path.exists():
-                raise FileNotFoundError(f"CNN weights not found at {path}. Run scripts/export_cnn_weights.py.")
-            with np.load(path) as f:
-                self.w = {k: f[k].astype(np.float32) for k in f.files}
-            log.info("CNN loaded from %s", path.name)
+            if _is_real_file(path):
+                self.w, self.source = load_keras_weights(path), path.name
+            elif fallback.exists():
+                log.warning("%s missing or an LFS pointer; using %s", path.name, fallback.name)
+                with np.load(fallback) as f:
+                    self.w = {k: f[k].astype(np.float32) for k in f.files}
+                self.source = fallback.name
+            else:
+                raise FileNotFoundError(f"CNN model not found at {path}. Copy tb_xray_best.keras into models/cnn/.")
+            log.info("CNN loaded from %s", self.source)
         except Exception as e:                                        # app keeps running; UI shows the error
             self.error = str(e)
             log.error("CNN loading failed: %s", e)
