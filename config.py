@@ -28,7 +28,7 @@ CLINICAL_CLIP_SD = 3.0
 # own term is negative (fever is already counted in core_symptom_count, and the model offsets it), and LOW
 # SpO2 lowered P(TB). Without the guard a feverish, hypoxic patient scores LOWER than the same patient
 # without those findings. Fever still counts through the core-symptom count. Set to () to disable.
-CLINICAL_NEUTRAL_TERMS = ("bin__fever", "num__spo2")
+CLINICAL_NEUTRAL_TERMS = ()   # off: scores come straight from the trained model. ("bin__fever", "num__spo2") enables it.
 
 # ---------------- fusion (documented assumption, see fusion/fusion.py) ----------------
 FUSION_WEIGHTS = {"cnn": 0.5, "clinical": 0.5}   # equal weights: NO paired data exists to estimate them

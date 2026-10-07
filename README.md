@@ -73,7 +73,7 @@ tb_multimodal/
 * Both above threshold → **High suspicion of TB**: refer for GeneXpert/culture.
 * Both below → **Low suspicion of TB**.
 * Disagree → *high uncertainty*. If the fused probability is above the fused threshold, the result is **TB possible: models disagree** and the patient is referred for confirmatory testing. Otherwise it is **Indeterminate: models disagree**, which requires clinician review. Disagreement is **never hidden** by the averaged number.
-* Two clinical model terms that contradict clinical knowledge are neutralised (`CLINICAL_NEUTRAL_TERMS` in `config.py`). Fever's separate term is one of them: fever still counts in the core-symptom count. SpO₂ is the other: low SpO₂ lowered P(TB) in the training data. Without this, a feverish, hypoxic patient scored lower than the same patient without those findings. The published metrics were measured before this adjustment.
+* Optional, **off by default**: two clinical model terms that contradict clinical knowledge can be neutralised (`CLINICAL_NEUTRAL_TERMS` in `config.py`). By default, scores come straight from the trained model. Fever's separate term is one of them: fever still counts in the core-symptom count. SpO₂ is the other: low SpO₂ lowered P(TB) in the training data. Without this, a feverish, hypoxic patient scored lower than the same patient without those findings. The published metrics were measured before this adjustment.
 * Clinical inputs outside the training range (mean ± 3 SD) are limited to that range before prediction, and the result page lists them. A linear model would otherwise extrapolate, e.g. SpO₂ 65% would force P(TB) to about 0.
 
 Examples: CNN 0.91 + clinical 0.87 → concordant, low uncertainty. CNN 0.15 + clinical 0.82 → discordant, high uncertainty.
